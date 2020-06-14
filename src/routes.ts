@@ -1,52 +1,37 @@
-import express from 'express';
-import PointsController from './controllers/pointsController';
-import ItemsController from './controllers/itemsController';
+import { Router } from 'express';
+import multer from 'multer';
+import { celebrate, Joi } from 'celebrate';
 
-const routes = express.Router();
-const pointsController= new PointsController();
-const itemsController= new ItemsController();
+import multerConfig from './config/multer';
+import PointsController from './controllers/PointsController';
+import ItemsController from './controllers/ItemsController';
 
-routes.get('/items',itemsController.index );
-routes.post('/points', pointsController.create );
-routes.get('/points/:id', pointsController.show );
-routes.get('/points/', pointsController.index );
+const routes = Router();
+const upload = multer(multerConfig);
 
+routes.get('/items', ItemsController.index);
 
-
-// routes.get('/items', async (resquest,response) => {
-//     const items =  await knex('items').select('*');
-
-//     const serializedItems = items.map(item => {
-//         return {
-//             id:item.id,
-//             title: item.title,
-//     	    image_url: `http://localhost:3333/uploads/${item.image}`,
-//         };
-//     });
-
-//     return response.json(serializedItems);
-// });
-
-// routes.post('/points', async (resquest,response) => {
-   
-//    const { name,email, whatsapp,latitude,longitude,city,uf,number, items} = resquest.body;
-
-//     const trx =await knex.transaction();
-
-//   const insertedIds = await trx('points').insert({image:'image-fake',name,email,whatsapp,latitude,longitude, city,uf,number});
-
-//   const point_id = insertedIds[0];
-
-//   const pointItems = items.map((item_id:number) =>{
-//       return {
-//           item_id,
-//           point_id
-//       };
-//   });
-
-//   await trx('points_items').insert(pointItems);
-   
-//     return response.json({success:true});
-// });
+routes.get('/points', PointsController.index);
+routes.get('/points/:id', PointsController.show);
+routes.post(
+  '/points', 
+  upload.single('image'),
+  celebrate({
+    body: Joi.object().keys({
+      name: Joi.string().required(),
+      email: Joi.string().required().email(),
+      whatsapp: Joi.number().required(),
+      latitude: Joi.number().required(),
+      longitude: Joi.number().required(),
+      address: Joi.string().required(),
+      city: Joi.string().required(),
+      uf: Joi.string().required().max(2),
+      items: Joi.string().required(),
+    }),
+  }, {
+    abortEarly: false,
+  }),
+  PointsController.create
+);
 
 export default routes;
